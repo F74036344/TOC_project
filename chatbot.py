@@ -5,7 +5,7 @@ from flask import Flask, request
 
 API_TOKEN = '360313119:AAGJOkRmXF2wxcqwEkujI47qrRotks7XS2I'
 # You can get the API token from the BotFather on the Telegram
-WEBHOOK_URL = 'https://Your URL/hook'
+WEBHOOK_URL = 'https://21b2fe2d.ngrok.io/hook'
 # e.g. 'https://Your URL/hook'
 
 app = Flask(__name__)
