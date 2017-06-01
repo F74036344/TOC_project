@@ -8,6 +8,7 @@ from transitions import Machine
 from bs4 import BeautifulSoup
 import urllib.request
 # import request
+import random
 
 #為了畫FSM的圖(不知道為什麼pygraphviz無法裝到我的電腦上所以先註解掉)
 # from transitions.extensions import GraphMachine as Machine 
@@ -73,6 +74,12 @@ class LuckKeywords:
 	def __init__(self):
 		self.luckKeywords = [];
 
+class UnknownWord:
+	def __init__(self):
+		self.unknownWord = ['不好意思聽不懂你的問題喔，麻煩請再說清楚一些><，關鍵字: 星座','你現在是在大聲什麼啦!','你為什麼不去吃大便?','看了感覺真可憐，哈哈哈']
+	def genUnknownWord(self):
+		return self.unknownWord[random.randint(0, 3)]
+unknown_word = UnknownWord()
 sign_keywords = SignKeywords()
 
 # keywords = Keywords(
@@ -122,24 +129,11 @@ astro_code = {
 	'Fish': 11
 }
 
-def _set_webhook():
-    status = bot.set_webhook(WEBHOOK_URL)
-    if not status:
-        print('Webhook setup failed')
-        sys.exit(1)
-
-
-@app.route('/hook', methods=['POST'])
-def webhook_handler():
-	if request.method == "POST":
-		update = telegram.Update.de_json(request.get_json(force=True), bot)
-		request_text = update.message.text
-		update.message.reply_text(generate_reply_text(request_text))
-
-	return 'ok'
 
 def generate_reply_text(request_text):
 	reply_text = request_text;
+	# 抓關鍵字
+	# 抓星座關鍵字
 	whichSign = None;
 	if any(ext in request_text for ext in sign_keywords.Ram): whichSign = 'Ram'
 	elif any(ext in request_text for ext in sign_keywords.Bull): whichSign = 'Bull'
@@ -160,19 +154,37 @@ def generate_reply_text(request_text):
 		# Create parsing object 'soup'
 		soup = BeautifulSoup(page, 'html.parser')
 		luck_intro = soup.find('div', attrs={'class':'TODAY_CONTENT'}).text
-		reply_text = luck_intro 
+		reply_text = luck_intro
+		return reply_text 
+
+	else:
+		return unknown_word.genUnknownWord()
 
 
-	return reply_text
 
-
-def generate_url_to_parse(sign, time, luck_or_intro):
+def generate_url_to_parse(sign, time_option, luck_or_intro):
 	# 網址形式: http://astro.click108.com.tw/daily.php?iAcDay=2017-06-02&iAstro=10
-	time_option = time
 	astro_option = str(astro_code[sign]);
 	url = 'http://astro.click108.com.tw/' + time_option + '.php?' + 'iAstro=' + astro_option
 	# + 'iAcDay=' + 
 	return url
+
+
+def _set_webhook():
+    status = bot.set_webhook(WEBHOOK_URL)
+    if not status:
+        print('Webhook setup failed')
+        sys.exit(1)
+    	# telegram.Update.message.reply_text('\(^o^)/')
+
+@app.route('/hook', methods=['POST'])
+def webhook_handler():
+	if request.method == "POST":
+		update = telegram.Update.de_json(request.get_json(force=True), bot)
+		request_text = update.message.text
+		update.message.reply_text(generate_reply_text(request_text))
+
+	return 'ok'
 
 if __name__ == "__main__":
 	_set_webhook()
