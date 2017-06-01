@@ -16,7 +16,7 @@ import time, datetime
 
 API_TOKEN = '360313119:AAGJOkRmXF2wxcqwEkujI47qrRotks7XS2I'
 # You can get the API token from the BotFather on the Telegram
-WEBHOOK_URL = 'https://57a69bc3.ngrok.io/hook'
+WEBHOOK_URL = 'https://31f81766.ngrok.io/hook'
 # e.g. 'https://Your URL/hook'
 
 app = Flask(__name__)
@@ -118,7 +118,6 @@ astro_code = {
 
 
 def generate_reply_text(request_text):
-	reply_text = request_text;
 	# 抓關鍵字
 	# 抓星座關鍵字
 	whichSign = None;
@@ -156,8 +155,7 @@ def generate_reply_text(request_text):
 		# Create parsing object 'soup'
 		soup = BeautifulSoup(page, 'html.parser')
 		luck_intro = soup.find('div', attrs={'class':'TODAY_CONTENT'}).text
-		reply_text = luck_intro
-		return reply_text 
+		return luck_intro
 
 	else:
 		return unknown_word.genUnknownWord()
@@ -218,9 +216,9 @@ def _set_webhook():
 def webhook_handler():
 	if request.method == "POST":
 		update = telegram.Update.de_json(request.get_json(force=True), bot)
-		request_text = update.message.text
-		print(udpdate.message)
-		update.message.reply_text(generate_reply_text(request_text))
+		if update is not None:
+			request_text = update.message.text
+			update.message.reply_text(generate_reply_text(request_text))
 	return 'ok'
 
 if __name__ == "__main__":
