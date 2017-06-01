@@ -6,10 +6,11 @@ from transitions import Machine
 
 # For webpage parsing
 from bs4 import BeautifulSoup
+import urllib.request
 # import request
 
-#為了畫FSM的圖
-from transitions.extensions import GraphMachine as Machine 
+#為了畫FSM的圖(不知道為什麼pygraphviz無法裝到我的電腦上所以先註解掉)
+# from transitions.extensions import GraphMachine as Machine 
 
 API_TOKEN = '360313119:AAGJOkRmXF2wxcqwEkujI47qrRotks7XS2I'
 # You can get the API token from the BotFather on the Telegram
@@ -105,21 +106,21 @@ sign_keywords = SignKeywords()
 # }
 
 # Introductions of signs
-sign = {
-	'Ram': '牡羊座介紹',
-	'Bull': '金牛座介紹♉',
-	'Twins': '雙子座介紹',
-	'Crab': '巨蟹座介紹',
-	'Lion': '獅子座介紹',
-	'Virgin': '處女座介紹',
-	'Balance': '天秤座介紹',
-	'Scorpion': '天蠍座介紹',
-	'Archer': '射手座介紹',
-	'Goat': '摩羯座介紹',
-	'Aquarius': '水瓶座介紹',
-	'Fish': '雙魚座介紹'
+# build up the astro code dictionary ( for webpage parsing)
+astro_code = {
+	'Ram': 0,
+	'Bull': 1,
+	'Twins': 2,
+	'Crab': 3,
+	'Lion': 4,
+	'Virgin': 5,
+	'Balance': 6,
+	'Scorpion': 7,
+	'Archer': 8,
+	'Goat': 9,
+	'Aquarius': 10,
+	'Fish': 11
 }
-
 
 def _set_webhook():
     status = bot.set_webhook(WEBHOOK_URL)
@@ -130,18 +131,49 @@ def _set_webhook():
 
 @app.route('/hook', methods=['POST'])
 def webhook_handler():
-    if request.method == "POST":
-        update = telegram.Update.de_json(request.get_json(force=True), bot)
-        request_text = update.message.text
+	if request.method == "POST":
+		update = telegram.Update.de_json(request.get_json(force=True), bot)
+		request_text = update.message.text
+		update.message.reply_text(generate_reply_text(request_text))
 
-        reply_text = request_text;
-        if any(ext in request_text for ext in sign_keywords.Ram):
-   		    reply_text = reply_text + '(' + sign_keywords.Ram[0] + 'keywords Detected XD)'
-        update.message.reply_text(reply_text)
+	return 'ok'
 
-    return 'ok'
+def generate_reply_text(request_text):
+	reply_text = request_text;
+	whichSign = None;
+	if any(ext in request_text for ext in sign_keywords.Ram): whichSign = 'Ram'
+	elif any(ext in request_text for ext in sign_keywords.Bull): whichSign = 'Bull'
+	elif any(ext in request_text for ext in sign_keywords.Twins): whichSign = 'Twins'
+	elif any(ext in request_text for ext in sign_keywords.Crab): whichSign = 'Crab'
+	elif any(ext in request_text for ext in sign_keywords.Lion): whichSign = 'Lion'
+	elif any(ext in request_text for ext in sign_keywords.Virgin): whichSign = 'Virgin'
+	elif any(ext in request_text for ext in sign_keywords.Balance): whichSign = 'Balance'
+	elif any(ext in request_text for ext in sign_keywords.Scorpion): whichSign = 'Scorpion'
+	elif any(ext in request_text for ext in sign_keywords.Archer): whichSign = 'Archer'
+	elif any(ext in request_text for ext in sign_keywords.Goat): whichSign = 'Goat'
+	elif any(ext in request_text for ext in sign_keywords.Aquarius): whichSign = 'Aquarius'
+	elif any(ext in request_text for ext in sign_keywords.Fish): whichSign = 'Fish'
+	# print(soup)
+	if whichSign is not None:
+		reply_text = reply_text + '(' + whichSign + ' keywords Detected XD)'
+		page = urllib.request.urlopen(generate_url_to_parse(whichSign, 'daily', None))
+		# Create parsing object 'soup'
+		soup = BeautifulSoup(page, 'html.parser')
+		luck_intro = soup.find('div', attrs={'class':'TODAY_CONTENT'}).text
+		reply_text = luck_intro 
 
+
+	return reply_text
+
+
+def generate_url_to_parse(sign, time, luck_or_intro):
+	# 網址形式: http://astro.click108.com.tw/daily.php?iAcDay=2017-06-02&iAstro=10
+	time_option = time
+	astro_option = str(astro_code[sign]);
+	url = 'http://astro.click108.com.tw/' + time_option + '.php?' + 'iAstro=' + astro_option
+	# + 'iAcDay=' + 
+	return url
 
 if __name__ == "__main__":
-    _set_webhook()
-    app.run()
+	_set_webhook()
+	app.run()
