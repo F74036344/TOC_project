@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 import urllib.request
 # import request
 import random
+import time, datetime
 
 #為了畫FSM的圖(不知道為什麼pygraphviz無法裝到我的電腦上所以先註解掉)
 # from transitions.extensions import GraphMachine as Machine 
@@ -70,47 +71,32 @@ class SignKeywords:
         self.Goat = ['魔羯','山羊','Goat','goat','Capriocorn','capricorn']
         self.Aquarius = ['水瓶','寶瓶','Water','water','Aquarius','aquarius']
         self.Fish = ['雙魚','Fishes','fishes','Fish','fish','Pisces','pisces']
+        self.Intro = ['介紹','簡介','特質','特點','Feature','feature','Intro','intro']
+        self.Luck = ['luck','']
+class TimeKeywords:	# 此class keywords需搭配signKeyword
+	def __init__(self):
+		self.today = ['今','today','Today']
+		self.tomorrow = ['明','tomorrow','Tomorrow']
+		self.week = ['週','周','week','Week']
+		self.month = ['月','month','Month']
 class LuckKeywords:
 	def __init__(self):
-		self.luckKeywords = [];
+		self.luckKeywords = ['運勢','luck','Luck']
+class IntroKeywords:
+	def __init__(self):
+		self.introKeywords = ['個性','介紹','特質','intro','Intro','feature','Feature']
 
 class UnknownWord:
 	def __init__(self):
-		self.unknownWord = ['不好意思聽不懂你的問題喔，麻煩請再說清楚一些><，關鍵字: 星座','你現在是在大聲什麼啦!','你為什麼不去吃大便?','看了感覺真可憐，哈哈哈']
+		self.unknownWord = ['不好意思聽不懂你的問題喔，麻煩請再說清楚一些><，可以用下面的方式問我問題喔~\n例如: 我想知道金牛座明天的運勢~']
 	def genUnknownWord(self):
-		return self.unknownWord[random.randint(0, 3)]
-unknown_word = UnknownWord()
+		return self.unknownWord[0]
+
 sign_keywords = SignKeywords()
-
-# keywords = Keywords(
-# 		['牡羊','白羊','Aries','aries','Ram','ram'],
-# 		['金牛','Bull','bull','Taurus','taurus'],
-# 		['雙子','Twins','twins','Twin','twin','Gemini','gemini'],
-# 		['巨蟹','Crab','crab','Cancer','cancer'],
-# 		['獅子','Lion','lion','Leo','leo'],
-# 		['處女','Virgin','virgin','Virgo','virgo'],
-# 		['天秤','天平','Balance','balance','Libra','libra'],
-# 		['天蠍','Scorpion','scorpion','Scorpio','scorpio'],
-# 		['射手','人馬','Archer','archer','Sagittarius','sagittarius'],
-# 		['魔羯','山羊','Goat','goat','Capriocorn','capricorn'],
-# 		['水瓶','寶瓶','Water','water','Aquarius','aquarius'],
-# 		['雙魚','Fishes','fishes','Fish','fish','Pisces','pisces']
-# 	)
-
-# keywords = {
-# 	'Ram': '牡羊座介紹',
-# 	'Bull': '金牛座介紹',
-# 	'Twins': '雙子座介紹',
-# 	'Crab': '巨蟹座介紹',
-# 	'Lion': '獅子座介紹',
-# 	'Virgin': '處女座介紹',
-# 	'Balance': '天秤座介紹',
-# 	'Scorpion': '天蠍座介紹',
-# 	'Archer': '射手座介紹',
-# 	'Goat': '摩羯座介紹',
-# 	'Aquarius': '水瓶座介紹',
-# 	'Fish': '雙魚座介紹'
-# }
+time_keywords = TimeKeywords()
+luck_keywords = LuckKeywords()
+intro_keywords = IntroKeywords()
+unknown_word = UnknownWord()
 
 # Introductions of signs
 # build up the astro code dictionary ( for webpage parsing)
@@ -147,10 +133,25 @@ def generate_reply_text(request_text):
 	elif any(ext in request_text for ext in sign_keywords.Goat): whichSign = 'Goat'
 	elif any(ext in request_text for ext in sign_keywords.Aquarius): whichSign = 'Aquarius'
 	elif any(ext in request_text for ext in sign_keywords.Fish): whichSign = 'Fish'
-	# print(soup)
+	# 抓時間關鍵字
+	whichTime = None;
+	if any(ext in request_text for ext in time_keywords.today): whichTime = 'today'
+	elif any(ext in request_text for ext in time_keywords.tomorrow): whichTime = 'tomorrow'
+	elif any(ext in request_text for ext in time_keywords.week): whichTime = 'week'
+	elif any(ext in request_text for ext in time_keywords.month): whichTime = 'month'
+	# 抓運勢關鍵字
+	isLuck = False;
+	if any(ext in request_text for ext in luck_keywords.luckKeywords): isLuck = True
+	# 抓介紹關鍵字
+	isIntro = False;
+	if any(ext in request_text for ext in intro_keywords.introKeywords): isIntro = True
+
+
 	if whichSign is not None:
-		reply_text = reply_text + '(' + whichSign + ' keywords Detected XD)'
-		page = urllib.request.urlopen(generate_url_to_parse(whichSign, 'daily', None))
+		if whichTime is not None:
+			page = urllib.request.urlopen(generate_url_to_parse(whichSign, whichTime, None))
+		else:
+			page = urllib.request.urlopen(generate_url_to_parse(whichSign, 'today', None))
 		# Create parsing object 'soup'
 		soup = BeautifulSoup(page, 'html.parser')
 		luck_intro = soup.find('div', attrs={'class':'TODAY_CONTENT'}).text
@@ -162,12 +163,48 @@ def generate_reply_text(request_text):
 
 
 
-def generate_url_to_parse(sign, time_option, luck_or_intro):
-	# 網址形式: http://astro.click108.com.tw/daily.php?iAcDay=2017-06-02&iAstro=10
+def generate_url_to_parse(sign, timeOp, luck_or_intro):
+	# 網址形式: http://astro.click108.com.tw/daily.php?iAcDay=2017-06-02&iAstro=10&iType=4
+	# astro_option
 	astro_option = str(astro_code[sign]);
-	url = 'http://astro.click108.com.tw/' + time_option + '.php?' + 'iAstro=' + astro_option
-	# + 'iAcDay=' + 
+	# time_option, time_date, type_option
+	# init
+	type_option = ''
+	if timeOp == 'today':
+		time_option = 'daily'
+		time_date = getDate('today')
+	elif timeOp == 'tomorrow':
+		time_option = 'daily'
+		time_date = getDate('tomorrow')
+		type_option = '&iType=4'
+	elif timeOp == 'week':
+		time_option = 'weekly'
+		time_date = getDate('today')
+		type_option = '&iType=1'
+	elif timeOp == 'month':
+		time_option = 'monthly'
+		time_date = getDate('today')
+		type_option = '&iType=2'
+	url = ('http://astro.click108.com.tw/' + time_option + '.php?' 
+		+ 'iAstro=' + astro_option
+		+ '&iAcDay=' + time_date
+		+ type_option
+		)
 	return url
+
+## yyyy-mm-dd format
+def getDate(whichDay):
+	#Create a datetime object with today's value
+	today = datetime.datetime.today() 
+	#add one day to today's date
+	tomorrow = today + datetime.timedelta(1)
+
+	#print today's date in YYYY-MM-DD format
+	if whichDay == 'today':	
+		return datetime.datetime.strftime(today,'%Y-%m-%d')
+	elif whichDay == 'tomorrow':
+		#print tomorrow's date in YYYY-MM-DD format
+		return datetime.datetime.strftime(tomorrow,'%Y-%m-%d')
 
 
 def _set_webhook():
@@ -183,7 +220,6 @@ def webhook_handler():
 		update = telegram.Update.de_json(request.get_json(force=True), bot)
 		request_text = update.message.text
 		update.message.reply_text(generate_reply_text(request_text))
-
 	return 'ok'
 
 if __name__ == "__main__":
