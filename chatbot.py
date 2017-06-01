@@ -16,7 +16,7 @@ import time, datetime
 
 API_TOKEN = '360313119:AAGJOkRmXF2wxcqwEkujI47qrRotks7XS2I'
 # You can get the API token from the BotFather on the Telegram
-WEBHOOK_URL = 'https://30234fb8.ngrok.io/hook'
+WEBHOOK_URL = 'https://57a69bc3.ngrok.io/hook'
 # e.g. 'https://Your URL/hook'
 
 app = Flask(__name__)
@@ -72,7 +72,7 @@ class SignKeywords:
         self.Aquarius = ['水瓶','寶瓶','Water','water','Aquarius','aquarius']
         self.Fish = ['雙魚','Fishes','fishes','Fish','fish','Pisces','pisces']
         self.Intro = ['介紹','簡介','特質','特點','Feature','feature','Intro','intro']
-        self.Luck = ['luck','']
+        self.Luck = ['luck','Luck']
 class TimeKeywords:	# 此class keywords需搭配signKeyword
 	def __init__(self):
 		self.today = ['今','today','Today']
@@ -88,7 +88,8 @@ class IntroKeywords:
 
 class UnknownWord:
 	def __init__(self):
-		self.unknownWord = ['不好意思聽不懂你的問題喔，麻煩請再說清楚一些><，可以用下面的方式問我問題喔~\n例如: 我想知道金牛座明天的運勢~']
+		self.unknownWord = ['不好意思聽不懂你的問題喔，麻煩請再說清楚一些><，可以用下面的方式問我問題喔~\
+			\n需輸入關鍵字 (1)星座 (2)時間(例如今天、明天、本周等等喔)\n例如: 我想知道金牛座明天的運勢~']
 	def genUnknownWord(self):
 		return self.unknownWord[0]
 
@@ -150,7 +151,7 @@ def generate_reply_text(request_text):
 	if whichSign is not None:
 		if whichTime is not None:
 			page = urllib.request.urlopen(generate_url_to_parse(whichSign, whichTime, None))
-		else:
+		else:	# 如果沒特別指定時間就當成是詢問今天的
 			page = urllib.request.urlopen(generate_url_to_parse(whichSign, 'today', None))
 		# Create parsing object 'soup'
 		soup = BeautifulSoup(page, 'html.parser')
@@ -212,13 +213,13 @@ def _set_webhook():
     if not status:
         print('Webhook setup failed')
         sys.exit(1)
-    	# telegram.Update.message.reply_text('\(^o^)/')
 
 @app.route('/hook', methods=['POST'])
 def webhook_handler():
 	if request.method == "POST":
 		update = telegram.Update.de_json(request.get_json(force=True), bot)
 		request_text = update.message.text
+		print(udpdate.message)
 		update.message.reply_text(generate_reply_text(request_text))
 	return 'ok'
 
